@@ -39,4 +39,8 @@ The result? A beautiful battle between "kill everything" (sparsity loss) and "st
 | 0.001 | 46.93% | 99.3% |
 | 0.01 | 42.18% | 100% |
 
-## What You'll See When You Run This
+## How to Run
+
+```bash
+pip install torch torchvision numpy matplotlib tqdm
+python self_pruning_network.py
