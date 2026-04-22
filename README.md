@@ -1,3 +1,25 @@
+# 🧠 Self-Pruning Neural Network
+
+A neural network that performs dynamic pruning during training using learnable gating parameters and L1 regularization.
+
+---
+
+## ⚙️ How It Works
+
+Each weight in the network is associated with a learnable gate parameter.
+
+W_effective = W × sigmoid(G)
+
+- W = original weight  
+- G = learnable gate score  
+- sigmoid(G) maps values between 0 and 1  
+
+If a gate value approaches 0, the corresponding weight is effectively pruned during the forward pass.
+
+---
+
+## 📉 Loss Function Trade-off
+
 The two loss components create a trade-off during training:
 
 - Classification loss encourages gates to remain active (values closer to 1) to preserve model accuracy  
@@ -34,7 +56,7 @@ The final distribution of gate values typically shows:
 - A strong spike near 0 (pruned weights)  
 - A separate cluster away from 0 (active weights)  
 
-![Gate Distribution](gate_distribution.png)
+![Gate Distribution](gate_distributions.png)
 
 *This reflects effective sparsity, where the model clearly separates useful and unnecessary connections.*
 
@@ -70,7 +92,7 @@ The final distribution of gate values typically shows:
 
 ```bash
 # Install dependencies
-pip install torch torchvision numpy matplotlib tqdm
+pip install -r requirements.txt
 
 # Run the script
 python self_pruning_network.py
@@ -84,3 +106,11 @@ python self_pruning_network.py
 - L1 regularization effectively enforces sparsity  
 - Significant model compression is achievable with minimal loss in accuracy  
 - There exists a clear trade-off between sparsity and performance  
+
+---
+
+## 📁 Files
+
+- self_pruning_network.py → Implementation  
+- requirements.txt → Dependencies  
+- README.md → Documentation  
