@@ -1,46 +1,86 @@
-# 🧠 Self-Pruning Neural Network
+The two loss components create a trade-off during training:
 
-> A neural network that learns to kill its own useless connections during training
+- Classification loss encourages gates to remain active (values closer to 1) to preserve model accuracy  
+- Sparsity loss encourages gates to move toward zero, effectively removing connections  
 
-## The Story Behind This Code
+The network learns an optimal balance between performance and sparsity.
 
-I came across an interesting challenge: "What if a neural network could figure out which weights matter and which don't—*while* it's training, not after?"
+---
 
-Most pruning happens after training. You train a big model, then go back and chop off the "unimportant" parts. But that always felt backward to me. Why not let the model figure it out in real-time?
+## 🧩 Why L1 Regularization Creates True Sparsity
 
-So I built this. A 4-layer network where every weight has a little "gatekeeper" (a learnable parameter between 0 and 1). If the gatekeeper decides a weight is useless, it kills it completely. The network literally prunes itself.
+A key reason this approach works is the behavior of L1 regularization:
 
-## Wait, How Does It Actually Work?
+| Regularization | Effect on Parameters | Outcome |
+|----------------|---------------------|---------|
+| L2 (sum of squares) | Gradually shrinks values | Parameters become small but rarely exactly zero |
+| L1 (sum of absolute values) | Applies constant pressure toward zero | Many parameters become exactly zero |
 
-Three simple ideas:
+The gradient of L1 regularization is constant (±1), meaning even small values experience the same push toward zero.  
+As gate scores become sufficiently negative, the sigmoid function maps them close to zero, effectively pruning those weights.
 
-1. **Every weight gets a gate** - For each weight `w`, there's a gate `g` (0 to 1). The real weight used is `w × g`.
+This leads to a **bimodal distribution**:
+- Values near 0 → pruned weights  
+- Values away from 0 → important connections  
 
-2. **L1 penalty pushes gates to zero** - The loss function includes `sum(all gates)`. This constant pressure makes gates want to become 0 (dead).
+Very few values remain in between.
 
-3. **Classification loss fights back** - If a weight actually helps predict the right answer, it fights to keep its gate alive.
+---
 
-The result? A beautiful battle between "kill everything" (sparsity loss) and "stay useful" (classification loss). The network learns exactly which connections matter.
+## 📉 Gate Value Distribution
 
-## What I Learned (That Surprised Me)
+The final distribution of gate values typically shows:
 
-**The bimodal distribution blew my mind.** I expected gates to gradually drift toward zero. Instead, they either became 0 (dead) or stayed near 1 (alive). Almost nothing in between. L1 regularization is brutal like that—it doesn't do "kind of dead."
+- A strong spike near 0 (pruned weights)  
+- A separate cluster away from 0 (active weights)  
 
-**Mild pruning actually helped accuracy.** At `λ = 0.0001`, the network killed 64% of its weights but *improved* accuracy from 47% to 52%. That's regularization in action—forced simplicity led to better generalization.
+![Gate Distribution](gate_distribution.png)
 
-**Most weights are useless.** At `λ = 0.001`, accuracy dropped only slightly (47% → 47%) while killing 99.3% of weights. The original network had massive redundancy.
+*This reflects effective sparsity, where the model clearly separates useful and unnecessary connections.*
 
-## Results Table
+---
 
-| λ (sparsity strength) | Test Accuracy | Dead Weights |
-|----------------------|---------------|--------------|
-| 0.0 (baseline) | 47.33% | 0% |
-| 0.0001 | 51.96% | 64.2% |
-| 0.001 | 46.93% | 99.3% |
-| 0.01 | 42.18% | 100% |
+## 📈 Results
 
-## How to Run
+| λ (Sparsity Strength) | Test Accuracy | Sparsity (%) |
+|----------------------|--------------|--------------|
+| 0.0 (baseline)       | 47.33%       | 0%           |
+| 0.0001               | 51.96%       | 64.2%        |
+| 0.001                | 46.93%       | 99.3%        |
+| 0.01                 | 42.18%       | 100%         |
+
+---
+
+## 📊 Observations
+
+- **λ = 0.0001**  
+  ~64% of weights pruned with improved accuracy  
+  → Indicates regularization improves generalization  
+
+- **λ = 0.001**  
+  ~99% sparsity with minimal accuracy drop  
+  → Suggests high redundancy in the network  
+
+- **λ = 0.01**  
+  Excessive pruning leads to performance degradation  
+
+---
+
+## ▶️ How to Run
 
 ```bash
+# Install dependencies
 pip install torch torchvision numpy matplotlib tqdm
+
+# Run the script
 python self_pruning_network.py
+```
+
+---
+
+## 📌 Key Takeaways
+
+- Dynamic pruning can be integrated directly into training  
+- L1 regularization effectively enforces sparsity  
+- Significant model compression is achievable with minimal loss in accuracy  
+- There exists a clear trade-off between sparsity and performance  
